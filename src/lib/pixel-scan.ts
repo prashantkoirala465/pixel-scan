@@ -84,19 +84,23 @@ vec4 cell(vec2 p, vec2 pi, float scale, float t, float edge) {
   float anim = smoothstep(W * 2., .0, abs(x + n * SPREAD - t));
 
   vec2 cellP = pc / scale;
-  float spotA = 0.;
-  for (int i = 0; i < TRAIL; i++) {
-    float w = trailW[i];
-    if (w <= 0.) continue;
-    vec2 rel = cellP - tp[i];
-    float ang = atan(rel.y, rel.x);
-    float wob = 1.
-      + 0.30 * sin(3. * ang + time * 1.6)
-      + 0.16 * sin(5. * ang - time * 1.1 + 1.3);
-    float reach = spot * 0.8 * wob;
-    spotA = max(spotA, smoothstep(reach, reach * 0.4, length(rel)) * w);
+  // the wake is multiplied by hover anyway — skip the whole trail loop
+  // (24 atan/sin evaluations per tap) when the pointer isn't around.
+  if (hover > 0.003) {
+    float spotA = 0.;
+    for (int i = 0; i < TRAIL; i++) {
+      float w = trailW[i];
+      if (w <= 0.) continue;
+      vec2 rel = cellP - tp[i];
+      float ang = atan(rel.y, rel.x);
+      float wob = 1.
+        + 0.30 * sin(3. * ang + time * 1.6)
+        + 0.16 * sin(5. * ang - time * 1.1 + 1.3);
+      float reach = spot * 0.8 * wob;
+      spotA = max(spotA, smoothstep(reach, reach * 0.4, length(rel)) * w);
+    }
+    anim = max(anim, spotA * hover);
   }
-  anim = max(anim, spotA * hover);
 
   float tone = 0.5 + 0.5 * sin(time * 2.0 + n * 6.2831)
                    + 0.18 * sin(time * 3.7 + n * 12.566);
@@ -204,7 +208,9 @@ export class PixelScanField {
   private base: [number, number, number]
   private textColor: string
 
-  private dpr = Math.min(2, window.devicePixelRatio || 1)
+  // 1.5 is plenty — the output is chunky blocks, not fine linework, and
+  // fragment cost scales with the square of this.
+  private dpr = Math.min(1.5, window.devicePixelRatio || 1)
   private family: string
 
   private renderer: InstanceType<Three['WebGLRenderer']>
@@ -242,6 +248,7 @@ export class PixelScanField {
   private lastFrame = this.startTime
   private raf = 0
   private running = false
+  private restFrameDrawn = false
 
   constructor(
     host: HTMLDivElement,
@@ -416,6 +423,7 @@ export class PixelScanField {
     this.uniforms.enterTime.value = this.enterTimeVal()
 
     this.hoverVal += (this.hoverTarget - this.hoverVal) * HOVER_EASE
+    if (Math.abs(this.hoverTarget - this.hoverVal) < 0.002) this.hoverVal = this.hoverTarget
     this.uniforms.hover.value = this.hoverVal
 
     this.liveX += (this.targetX - this.liveX) * LIVE_EASE
@@ -453,7 +461,20 @@ export class PixelScanField {
     }
     ;(this.uniforms.mouse.value as InstanceType<Three['Vector2']>).set(this.liveX, this.liveY)
 
-    this.renderer.render(this.scene, this.camera)
+    // Once the entrance has finished and the wake has fully decayed, the
+    // frame is static — draw it once more and stop hitting the GPU until
+    // the pointer wakes the field again.
+    const atRest =
+      (this.uniforms.enterTime.value as number) >= 2 &&
+      this.hoverVal === 0 &&
+      !this.liveOn
+    if (!atRest) {
+      this.restFrameDrawn = false
+      this.renderer.render(this.scene, this.camera)
+    } else if (!this.restFrameDrawn) {
+      this.restFrameDrawn = true
+      this.renderer.render(this.scene, this.camera)
+    }
     this.raf = requestAnimationFrame(this.tick)
   }
 
