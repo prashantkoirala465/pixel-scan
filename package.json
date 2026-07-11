@@ -1,0 +1,21 @@
+{
+  "name": "pixel-scan",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A WebGL fragment shader over a word: a diagonal band assembles it from a spray of tiny colored blocks, then the cursor lights a pool of blocks with a lasting wake.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.39"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "typescript": "~5.9",
+    "vite": "^8.1.4",
+    "vue-tsc": "^3.3.7"
+  }
+}

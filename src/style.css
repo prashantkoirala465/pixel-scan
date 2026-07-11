@@ -1,0 +1,32 @@
+:root {
+  --paper: #f6f4fc;
+  --ink: #191b24;
+  --quiet: #8f8ba0;
+
+  --font-display: Georgia, serif;
+  --font-utility: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-utility);
+  overflow-x: hidden;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
