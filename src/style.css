@@ -3,7 +3,8 @@
   --ink: #191b24;
   --quiet: #8f8ba0;
 
-  --font-display: Georgia, serif;
+  /* the engine rasterises the word in this face (read off the host element) */
+  --font-display: 'Fraunces', Georgia, serif;
   --font-utility: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
